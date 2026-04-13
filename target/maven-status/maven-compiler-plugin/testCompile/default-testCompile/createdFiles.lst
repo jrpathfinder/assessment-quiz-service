@@ -1,0 +1,8 @@
+org/java/assesment/quiz_service/TestContainersConfig.class
+org/java/assesment/quiz_service/QuizServiceApplicationTests.class
+org/java/assesment/quiz_service/service/ExamServiceTest.class
+org/java/assesment/quiz_service/service/CategoryServiceTest.class
+org/java/assesment/quiz_service/controller/QuestionControllerTest.class
+org/java/assesment/quiz_service/controller/CategoryControllerTest.class
+org/java/assesment/quiz_service/controller/ExamControllerTest.class
+org/java/assesment/quiz_service/service/QuestionServiceTest.class
