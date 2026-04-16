@@ -1,32 +1,44 @@
 package org.java.assesment.quiz_service.config;
 
-import lombok.RequiredArgsConstructor;
 import org.java.assesment.quiz_service.security.JwtAuthenticationFilter;
 import org.java.assesment.quiz_service.security.OAuth2SuccessHandler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
-    private final OAuth2SuccessHandler oAuth2SuccessHandler;
+
+    /** Null when GOOGLE_CLIENT_ID is not configured (local dev / no SSO) */
+    @Autowired(required = false)
+    private OAuth2SuccessHandler oAuth2SuccessHandler;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // IF_REQUIRED: sessions only for OAuth2 code flow (stores PKCE code_verifier)
+            // JWT-authenticated API calls don't create sessions
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
                 .requestMatchers("/api/auth/**").permitAll()
@@ -37,14 +49,23 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/exams/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/questions/**").permitAll()
-                // Exam attempts require authentication
-                .requestMatchers("/api/attempts/**").authenticated()
+                // Exam-taking endpoints: service handles anonymous users (null user is OK)
+                // Admin-only actions (create/update/delete) are protected by @PreAuthorize
+                .requestMatchers(HttpMethod.POST, "/api/exams/*/start").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/attempts/*/submit").permitAll()
+                .requestMatchers("/api/attempts/**").permitAll()
                 .anyRequest().authenticated()
             )
-            .oauth2Login(oauth -> oauth
-                .successHandler(oAuth2SuccessHandler)
-            )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            // Return 401 (not 403) for unauthenticated requests — lets the frontend redirect to /login
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+            );
+
+        // Only wire OAuth2 login when Google credentials are present
+        if (oAuth2SuccessHandler != null) {
+            http.oauth2Login(oauth -> oauth.successHandler(oAuth2SuccessHandler));
+        }
 
         return http.build();
     }

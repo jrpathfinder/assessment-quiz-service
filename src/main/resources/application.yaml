@@ -54,13 +54,3 @@ app:
     expiration-hours: ${JWT_EXPIRATION_HOURS:24}
   frontend-url: ${FRONTEND_URL:http://localhost:3000}
 
-# Google OAuth2
-spring:
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: ${GOOGLE_CLIENT_ID:}
-            client-secret: ${GOOGLE_CLIENT_SECRET:}
-            scope: openid,email,profile
