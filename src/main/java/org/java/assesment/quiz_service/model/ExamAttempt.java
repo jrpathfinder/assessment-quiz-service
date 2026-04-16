@@ -44,6 +44,11 @@ public class ExamAttempt {
     @Column(nullable = false, length = 20)
     private AttemptStatus status = AttemptStatus.IN_PROGRESS;
 
+    /** The user who started this attempt. Null for legacy/anonymous attempts. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private AppUser user;
+
     @OneToMany(mappedBy = "attempt", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AttemptAnswer> answers = new ArrayList<>();
 }

@@ -46,3 +46,11 @@ management:
     web:
       exposure:
         include: health,info
+
+# JWT configuration
+app:
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-production-use-at-least-32-chars}
+    expiration-hours: ${JWT_EXPIRATION_HOURS:24}
+  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+

@@ -5,9 +5,11 @@ import org.java.assesment.quiz_service.dto.attempt.*;
 import org.java.assesment.quiz_service.exception.ResourceNotFoundException;
 import org.java.assesment.quiz_service.model.*;
 import org.java.assesment.quiz_service.model.enums.AttemptStatus;
+import org.java.assesment.quiz_service.repository.AppUserRepository;
 import org.java.assesment.quiz_service.repository.ExamAttemptRepository;
 import org.java.assesment.quiz_service.repository.ExamRepository;
 import org.java.assesment.quiz_service.repository.QuestionRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,7 @@ public class ExamAttemptService {
     private final ExamRepository        examRepository;
     private final QuestionRepository    questionRepository;
     private final ExamAttemptRepository attemptRepository;
+    private final AppUserRepository     userRepository;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Start exam
@@ -46,8 +49,12 @@ public class ExamAttemptService {
         LocalDateTime now      = LocalDateTime.now();
         LocalDateTime deadline = now.plusMinutes(exam.getMaxTimeMinutes());
 
+        // ── Link attempt to authenticated user (if any) ─────────────────────
+        AppUser currentUser = getCurrentUser();
+
         ExamAttempt attempt = new ExamAttempt();
         attempt.setExam(exam);
+        attempt.setUser(currentUser);
         attempt.setStartedAt(now);
         attempt.setDeadlineAt(deadline);
         attempt.setStatus(AttemptStatus.IN_PROGRESS);
@@ -272,5 +279,22 @@ public class ExamAttemptService {
         }
 
         return new ExamAccessResponse(examId, accessStatus, bestScore, bestPercentage, attempts.size());
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Helper: resolve current user from JWT (null = anonymous)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private AppUser getCurrentUser() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal() instanceof String) {
+            return null;
+        }
+        try {
+            Long userId = (Long) auth.getPrincipal();
+            return userRepository.findById(userId).orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
