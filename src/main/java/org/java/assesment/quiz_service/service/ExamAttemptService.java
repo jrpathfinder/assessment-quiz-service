@@ -41,6 +41,10 @@ public class ExamAttemptService {
 
         List<Question> questions = questionRepository.findByExamId(examId);
 
+        if (questions.isEmpty()) {
+            throw new IllegalStateException("Exam has no questions yet. Add questions before starting.");
+        }
+
         // ── Randomise question order (ITBelts pattern) ──────────────────────
         List<Question> shuffled = new ArrayList<>(questions);
         Collections.shuffle(shuffled);

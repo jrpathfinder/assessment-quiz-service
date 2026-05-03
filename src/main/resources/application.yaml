@@ -53,4 +53,8 @@ app:
     secret: ${JWT_SECRET:change-me-in-production-use-at-least-32-chars}
     expiration-hours: ${JWT_EXPIRATION_HOURS:24}
   frontend-url: ${FRONTEND_URL:http://localhost:3000}
+  claude:
+    api-key: ${CLAUDE_API_KEY:}
+    model: claude-haiku-4-5-20251001
+    max-tokens: 8192
 

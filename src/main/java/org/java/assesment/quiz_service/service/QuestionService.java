@@ -3,6 +3,7 @@ package org.java.assesment.quiz_service.service;
 import lombok.RequiredArgsConstructor;
 import org.java.assesment.quiz_service.dto.PossibleAnswerDTO;
 import org.java.assesment.quiz_service.dto.QuestionDTO;
+import org.java.assesment.quiz_service.dto.question.BatchImportRequest;
 import org.java.assesment.quiz_service.exception.ResourceNotFoundException;
 import org.java.assesment.quiz_service.model.Exam;
 import org.java.assesment.quiz_service.model.PossibleAnswer;
@@ -76,6 +77,37 @@ public class QuestionService {
         }
 
         return toDTO(questionRepository.save(question));
+    }
+
+    @Transactional
+    public List<QuestionDTO> batchImport(BatchImportRequest request) {
+        Exam exam = examRepository.findById(request.examId())
+                .orElseThrow(() -> new ResourceNotFoundException("Exam", request.examId()));
+
+        return request.questions().stream().map(item -> {
+            Question q = new Question();
+            q.setExam(exam);
+            q.setQuestionText(item.questionText());
+            q.setExplanation(item.explanation());
+            q.setStatus(item.status() != null
+                    ? QuestionStatus.valueOf(item.status().toUpperCase())
+                    : QuestionStatus.BETA);
+            q.setAnswerType(item.answerType() != null
+                    ? AnswerType.valueOf(item.answerType().toUpperCase())
+                    : AnswerType.RADIO);
+
+            for (int i = 0; i < item.answers().size(); i++) {
+                BatchImportRequest.AnswerImportItem a = item.answers().get(i);
+                PossibleAnswer pa = new PossibleAnswer();
+                pa.setQuestion(q);
+                pa.setText(a.text());
+                pa.setCorrect(a.correct());
+                pa.setExplanation(a.explanation());
+                pa.setOrderIndex(a.orderIndex() > 0 ? a.orderIndex() : i);
+                q.getPossibleAnswers().add(pa);
+            }
+            return toDTO(questionRepository.save(q));
+        }).toList();
     }
 
     @Transactional
