@@ -10,22 +10,22 @@ import org.java.assesment.quiz_service.model.enums.UserRole;
 import org.java.assesment.quiz_service.repository.AppUserRepository;
 import org.java.assesment.quiz_service.repository.CategoryRepository;
 import org.java.assesment.quiz_service.repository.ExamRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 /**
- * Seeds initial data when running with the "dev" profile (H2 in-memory).
- * Not active in production (PostgreSQL + Flyway handles seeding there).
+ * Seeds initial data for H2 in-memory environments (dev + prod on Cloud Run).
+ * Both profiles use H2, so seeding runs on every startup.
  *
- * Dev admin credentials:  admin@dev.local / admin123
+ * Dev admin:  admin@dev.local / admin123
+ * Prod admin: jr.pathfinder@gmail.com / 160219
  */
 @Slf4j
 @Component
-@Profile("dev")
+@Profile({"dev", "prod"})   // runs for both — H2 is in-memory so seeding is needed on every start
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
 
@@ -33,6 +33,9 @@ public class DataSeeder implements CommandLineRunner {
     private final ExamRepository     examRepository;
     private final AppUserRepository  userRepository;
     private final PasswordEncoder    passwordEncoder;
+
+    @Value("${spring.profiles.active:dev}")
+    private String activeProfile;
 
     @Override
     public void run(String... args) {
@@ -64,17 +67,21 @@ public class DataSeeder implements CommandLineRunner {
     // ── Admin user ────────────────────────────────────────────────────────────
 
     private void seedAdminUser() {
-        String email = "admin@dev.local";
+        boolean isProd = "prod".equals(activeProfile);
+        String email    = isProd ? "jr.pathfinder@gmail.com" : "admin@dev.local";
+        String password = isProd ? "160219"                  : "admin123";
+        String name     = isProd ? "Admin"                   : "Dev Admin";
+
         if (userRepository.findByEmail(email).isPresent()) return;
 
         AppUser admin = AppUser.builder()
                 .email(email)
-                .passwordHash(passwordEncoder.encode("admin123"))
-                .displayName("Dev Admin")
+                .passwordHash(passwordEncoder.encode(password))
+                .displayName(name)
                 .role(UserRole.ADMIN)
                 .build();
         userRepository.save(admin);
-        log.info("DataSeeder: admin user created → email={} password=admin123", email);
+        log.info("DataSeeder: admin user created → email={}", email);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

@@ -9,7 +9,6 @@ REGION="us-central1"
 SERVICE_NAME="quiz-service"
 REPO="quiz-repo"
 IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/$REPO/$SERVICE_NAME:latest"
-CLOUD_SQL_INSTANCE="$PROJECT_ID:$REGION:ai-trainer-project"
 
 # ── Load secrets from deploy.env (never committed) ──────────────────────────
 DEPLOY_ENV="$(dirname "$0")/deploy.env"
@@ -25,8 +24,6 @@ fi
 : "${GOOGLE_OAUTH_CLIENT_ID:?deploy.env must set GOOGLE_OAUTH_CLIENT_ID}"
 : "${GOOGLE_OAUTH_CLIENT_SECRET:?deploy.env must set GOOGLE_OAUTH_CLIENT_SECRET}"
 : "${JWT_SECRET:?deploy.env must set JWT_SECRET}"
-: "${DB_USER:?deploy.env must set DB_USER}"
-: "${DB_PASSWORD:?deploy.env must set DB_PASSWORD}"
 : "${CLAUDE_API_KEY:?deploy.env must set CLAUDE_API_KEY}"
 
 echo "=== Setting GCP project ==="
@@ -62,8 +59,7 @@ $GCLOUD run deploy $SERVICE_NAME \
   --cpu=1 \
   --min-instances=0 \
   --max-instances=3 \
-  --add-cloudsql-instances=$CLOUD_SQL_INSTANCE \
-  --set-env-vars="SPRING_PROFILES_ACTIVE=prod,DB_USER=${DB_USER},DB_PASSWORD=${DB_PASSWORD},FRONTEND_URL=https://nomiq.net,JWT_SECRET=${JWT_SECRET},CLAUDE_API_KEY=${CLAUDE_API_KEY},SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID},SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET},SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_REDIRECT_URI=https://nomiq.net/login/oauth2/code/google"
+  --set-env-vars="SPRING_PROFILES_ACTIVE=prod,FRONTEND_URL=https://nomiq.net,JWT_SECRET=${JWT_SECRET},CLAUDE_API_KEY=${CLAUDE_API_KEY},SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID},SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET},SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_REDIRECT_URI=https://nomiq.net/login/oauth2/code/google"
 
 echo ""
 echo "=== Deployment complete! ==="
