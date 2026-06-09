@@ -45,14 +45,12 @@ public class SecurityConfig {
                 .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
-                // Read-only quiz data is public (browse without login)
-                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/exams/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/questions/**").permitAll()
-                // Exam-taking endpoints: service handles anonymous users (null user is OK)
-                // Admin-only actions (create/update/delete) are protected by @PreAuthorize
-                .requestMatchers(HttpMethod.POST, "/api/exams/*/start").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/attempts/*/submit").permitAll()
+                // Auth endpoints — always public
+                .requestMatchers("/api/auth/**").permitAll()
+                // Quiz content — fully public; admin write-ops protected by @PreAuthorize at method level
+                .requestMatchers("/api/categories/**").permitAll()
+                .requestMatchers("/api/exams/**").permitAll()
+                .requestMatchers("/api/questions/**").permitAll()
                 .requestMatchers("/api/attempts/**").permitAll()
                 .anyRequest().authenticated()
             )
